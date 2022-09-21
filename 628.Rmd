@@ -4,3 +4,9 @@ author: "Nicholas Ray"
 date: "9/20/2022"
 output: pdf_document
 ---
+```{r}
+library(here)
+```
+```{r}
+read.csv("us_foreign_aid_country.csv")
+```
