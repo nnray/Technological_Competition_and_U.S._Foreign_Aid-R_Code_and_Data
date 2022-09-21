@@ -6,11 +6,11 @@ output: pdf_document
 ---
 ```{r}
 library(here)
-#library(readxl)
+library(readxl)
 #library(R.utils)
-#library(readr)
+library(readr)
 ```
 ```{r}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
-#Caid<-read_xlsx(here("Data", "Aid", "AidDataChina", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.xlxs"))
+Caid<-read_csv(unzip(here("Data", "Aid", "aiddataChina", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.zip", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.xlxs")))
 ```
