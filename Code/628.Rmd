@@ -15,4 +15,5 @@ USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
 unzip(here("Data", "Aid", "aiddataChina", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.zip"))
 Caid<-read_excel(here("Code", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.xlsx"), sheet = 5)
 head(Caid)
+head(USaid)
 ```
