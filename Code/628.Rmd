@@ -26,5 +26,6 @@ ITU<-read_excel(here("Code", "ddd_dataset.xlsx"))
 #somehow combine all of this and clean with tidyverse
 ```
 ```{r Analysis}
-#interested in "Government social media censorship in practice (C) (v2smgovsmcenprc)"
+#Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
+#Proxy for Big Tech company presence as opposed to restrictive Chinese media? " Online media perspectives (C) (v2smonper)"
 ```
