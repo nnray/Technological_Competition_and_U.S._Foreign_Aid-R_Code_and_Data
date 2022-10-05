@@ -4,7 +4,7 @@ author: "Nicholas Ray"
 date: "9/20/2022"
 output: pdf_document
 ---
-```{r}
+```{r Library, include=FALSE,warning=FALSE,message=FALSE}
 library(here)
 library(readxl)
 library(utils)
@@ -23,7 +23,10 @@ unzip(here("Data", "InternetInfrastructure", "ddd_dataset.zip"))
 ITU<-read_excel(here("Code", "ddd_dataset.xlsx"))
 ```
 ```{r Cleaning}
-#somehow combine all of this and clean with tidyverse
+Caid<- Caid %>%
+  filter(`Recipient Region` == "Africa" & `Recommended For Aggregates` == "Yes") %>%
+  select(`AidData TUFF Project ID`,`Recipient`,`Commitment Year`,`Amount (Original Currency)`,
+         `Amount (Constant USD2017)`)
 ```
 ```{r Analysis}
 #Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
