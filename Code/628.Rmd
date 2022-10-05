@@ -24,9 +24,18 @@ ITU<-read_excel(here("Code", "ddd_dataset.xlsx"))
 ```
 ```{r Cleaning}
 Caid<- Caid %>%
-  filter(`Recipient Region` == "Africa" & `Recommended For Aggregates` == "Yes") %>%
+  filter(`Recipient Region` == "Africa" & `Recommended For Aggregates` == "Yes" & `Commitment Year` > "2009") %>%
   select(`AidData TUFF Project ID`,`Recipient`,`Commitment Year`,`Amount (Original Currency)`,
          `Amount (Constant USD2017)`)
+DSP<- subset(DSP, country_name %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cape Verde","Cameroon",
+                                 "Central African Republic","Chad","Comoros","Republic of the Congo","Ivory Coast",
+                                 "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
+                                 "Eritrea","Ethiopia","Gabon","The Gambia","Ghana","Guinea","Guinea-Bissau",
+                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
+                                 "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
+                                 "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
+                                 "Zambia","Zimbabwe"))
 ```
 ```{r Analysis}
 #Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
