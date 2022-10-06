@@ -20,6 +20,7 @@ unzip(here("Data", "PoliticalFreedom", "Country_Year_V-Dem_Core_CSV_v12", "V-Dem
 VDem<-read.csv(here("Code", "V-Dem-CY-Core-v12.csv"))
 unzip(here("Data", "InternetInfrastructure", "ddd_dataset.zip"))
 ITU<-read_excel(here("Code", "ddd_dataset.xlsx"))
+GDP<-read.csv(here("Data", "GDP", "API_NY.GDP.PCAP.CD_DS2_en_csv_v2_4498542.csv"),skip = 4) #how tf to clean this?
 ```
 ```{r Cleaning, include=FALSE,warning=FALSE,message=FALSE}
 Caid["Recipient"][Caid["Recipient"] == "Congo"] <- "Republic of Congo"
@@ -93,7 +94,7 @@ VDem<-subset(VDem, `country_name` %in% c("Algeria","Angola","Benin","Botswana","
                                  "Zambia","Zimbabwe"))
 VDem<- VDem %>%
   filter(`year` > "2009" & `year` < "2018") %>%
-  select(`country_name`,`year`,`v2x_polyarchy`)
+  select(`country_name`,`year`,`v2x_polyarchy`) #need to specify accurate political freedom variable
 Caid<-rename(Caid, country_name = Recipient)
 Caid<-rename(Caid, china_constant2017usd=total_constant)
 ITU<-rename(ITU, country_name = Country)
