@@ -16,26 +16,88 @@ unzip(here("Data", "Aid", "aiddataChina", "AidDatasGlobalChineseDevelopmentFinan
 Caid<-read_excel(here("Code", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.xlsx"), sheet = 5)
 unzip(here("Data", "InternetFreedom", "DSP-Dataset-v4.zip"))
 DSP<-read.csv(here("Code", "DSP-Dataset-v4.csv"))
-FOTN<-read_excel(here("Data", "InternetFreedom", "FOTN 2011-2021 Score Data.xlsx"))
 unzip(here("Data", "PoliticalFreedom", "Country_Year_V-Dem_Core_CSV_v12", "V-Dem-CY-Core-v12.zip"))
 VDem<-read.csv(here("Code", "V-Dem-CY-Core-v12.csv"))
 unzip(here("Data", "InternetInfrastructure", "ddd_dataset.zip"))
 ITU<-read_excel(here("Code", "ddd_dataset.xlsx"))
 ```
 ```{r Cleaning}
+Caid["Recipient"][Caid["Recipient"] == "Congo"] <- "Republic of Congo"
+Caid<-Caid[!(Caid$Recipient=="Africa, regional"),]
 Caid<- Caid %>%
   filter(`Recipient Region` == "Africa" & `Recommended For Aggregates` == "Yes" & `Commitment Year` > "2009") %>%
   select(`AidData TUFF Project ID`,`Recipient`,`Commitment Year`,`Amount (Original Currency)`,
          `Amount (Constant USD2017)`)
-DSP<- subset(DSP, country_name %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cape Verde","Cameroon",
-                                 "Central African Republic","Chad","Comoros","Republic of the Congo","Ivory Coast",
+Caid<- na.omit(Caid)
+Caid<- Caid %>%
+  group_by(`Recipient`,`Commitment Year`) %>%
+  summarise(total_constant=sum(`Amount (Constant USD2017)`))
+DSP["country_name"][DSP["country_name"] == "Cape Verde"] <- "Cabo Verde"
+DSP["country_name"][DSP["country_name"] == "Ivory Coast"] <- "Cote d'Ivoire"
+DSP["country_name"][DSP["country_name"] == "The Gambia"] <- "Gambia"
+DSP<- subset(DSP, country_name %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cabo Verde","Cameroon",
+                                 "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
                                  "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
-                                 "Eritrea","Ethiopia","Gabon","The Gambia","Ghana","Guinea","Guinea-Bissau",
+                                 "Eritrea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
                                  "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
                                  "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
                                  "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
+DSP<- DSP %>%
+  filter(`year` > "2009" & year < "2018") %>%
+  select(`country_name`,`country_text_id`,`country_id`,`year`,`COWcode`,`v2smgovsmcenprc`,`v2smonper`)
+ITU<- subset(ITU, `Indicator name` %in% c("Individuals using the Internet, total (%)"))
+ITU["Country"][ITU["Country"] == "Central African Rep."] <- "Central African Republic"
+ITU["Country"][ITU["Country"] == "Congo (Rep. of the)"] <- "Republic of the Congo"
+ITU["Country"][ITU["Country"] == "Côte d'Ivoire"] <- "Cote d'Ivoire"
+ITU["Country"][ITU["Country"] == "Dem. Rep. of the Congo"] <- "Democratic Republic of the Congo"
+ITU<- subset(ITU, Country %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cabo Verde","Cameroon",
+                                 "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
+                                 "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
+                                 "Eritrea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
+                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
+                                 "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
+                                 "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
+                                 "Zambia","Zimbabwe"))
+ITU<- ITU %>%
+  filter(`Year` > "2009" & `Year` < "2018") %>%
+  select(`Country`,`Indicator name`, `Year`,`Value`)
+USaid<- subset(USaid, `Transaction.Type.Name` %in% c("Disbursements"))
+USaid["Country.Name"][USaid["Country.Name"] == "Congo (Brazzaville)"]<- "Republic of the Congo"
+USaid["Country.Name"][USaid["Country.Name"] == "Congo (Kinshasa)"]<- "Democratic Republic of the Congo"
+USaid["Country.Name"][USaid["Country.Name"] == "Sudan (former)"]<- "South Sudan"
+USaid<- subset(USaid, `Country.Name` %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cabo Verde","Cameroon",
+                                 "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
+                                 "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
+                                 "Eritrea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
+                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
+                                 "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
+                                 "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
+                                 "Zambia","Zimbabwe"))
+USaid<- USaid %>%
+  filter(`Fiscal.Year` > "2009" & `Fiscal.Year` < "2018") %>%
+  select(`Country.Name`,`Fiscal.Year`,`Transaction.Type.Name`,`constant_amount`)
+VDem["country_name"][VDem["country_name"] == "Cape Verde"] <- "Cabo Verde"
+VDem["country_name"][VDem["country_name"] == "The Gambia"] <- "Gambia"
+VDem<-subset(VDem, `country_name` %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cabo Verde","Cameroon",
+                                 "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
+                                 "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
+                                 "Eritrea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
+                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
+                                 "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
+                                 "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
+                                 "Zambia","Zimbabwe"))
+VDem<- VDem %>%
+  filter(`year` > "2009" & `year` < "2018") %>%
+  select(`country_name`,`year`,`v2x_polyarchy`)
+Caid<-rename(Caid, country_name = Recipient)
+ITU<-rename(ITU, country_name = Country)
+USaid<-rename(USaid, country_name = Country.Name)
+#data<-
 ```
 ```{r Analysis}
 #Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
