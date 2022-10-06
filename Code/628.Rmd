@@ -10,7 +10,7 @@ library(readxl)
 library(utils)
 library(tidyverse)
 ```
-```{r Data}
+```{r Data, include=FALSE,warning=FALSE,message=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
 unzip(here("Data", "Aid", "aiddataChina", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.zip"))
 Caid<-read_excel(here("Code", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.xlsx"), sheet = 5)
@@ -21,7 +21,7 @@ VDem<-read.csv(here("Code", "V-Dem-CY-Core-v12.csv"))
 unzip(here("Data", "InternetInfrastructure", "ddd_dataset.zip"))
 ITU<-read_excel(here("Code", "ddd_dataset.xlsx"))
 ```
-```{r Cleaning}
+```{r Cleaning, include=FALSE,warning=FALSE,message=FALSE}
 Caid["Recipient"][Caid["Recipient"] == "Congo"] <- "Republic of Congo"
 Caid<-Caid[!(Caid$Recipient=="Africa, regional"),]
 Caid<- Caid %>%
@@ -95,9 +95,24 @@ VDem<- VDem %>%
   filter(`year` > "2009" & `year` < "2018") %>%
   select(`country_name`,`year`,`v2x_polyarchy`)
 Caid<-rename(Caid, country_name = Recipient)
+Caid<-rename(Caid, china_constant2017usd=total_constant)
 ITU<-rename(ITU, country_name = Country)
+Caid<-rename(Caid,year=`Commitment Year`)
 USaid<-rename(USaid, country_name = Country.Name)
-#data<-
+ITU<-rename(ITU, year= Year)
+ITU<-rename(ITU, indicator_name=`Indicator name`)
+ITU<-rename(ITU, total_internet=Value) #total percent of individuals using internet
+ITU<- ITU %>%
+  select(`country_name`,`year`,`total_internet`)
+USaid<-rename(USaid, year=`Fiscal.Year`)
+USaid<-rename(USaid, us_constant2021usd=`constant_amount`) #US aid variable, constant USD
+USaid<-USaid %>% 
+  select(`country_name`,`year`,`constant_disbursements`)
+USaid<-transform(USaid, year=as.numeric(year))
+data<- full_join(Caid, DSP, by = c("country_name","year")) %>%
+  full_join(., ITU, by = c("country_name","year")) %>%
+  full_join(., USaid, by = c("country_name","year")) %>%
+  full_join(., VDem, by = c("country_name","year"))
 ```
 ```{r Analysis}
 #Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
