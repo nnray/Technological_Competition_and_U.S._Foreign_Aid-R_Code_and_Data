@@ -20,7 +20,8 @@ unzip(here("Data", "PoliticalFreedom", "Country_Year_V-Dem_Core_CSV_v12", "V-Dem
 VDem<-read.csv(here("Code", "V-Dem-CY-Core-v12.csv"))
 unzip(here("Data", "InternetInfrastructure", "ddd_dataset.zip"))
 ITU<-read_excel(here("Code", "ddd_dataset.xlsx"))
-GDP<-read.csv(here("Data", "GDP", "API_NY.GDP.PCAP.CD_DS2_en_csv_v2_4498542.csv"),skip = 4) #how tf to clean this?
+unzip(here("Data", "GDP", "UNdata_Export_20221013_234232609.zip"))
+GDP<-read.csv(here("Code", "UNdata_Export_20221013_234232609.csv"))
 ```
 ```{r Cleaning, include=FALSE,warning=FALSE,message=FALSE}
 Caid["Recipient"][Caid["Recipient"] == "Congo"] <- "Republic of Congo"
@@ -95,25 +96,46 @@ VDem<-subset(VDem, `country_name` %in% c("Algeria","Angola","Benin","Botswana","
 VDem<- VDem %>%
   filter(`year` > "2009" & `year` < "2018") %>%
   select(`country_name`,`year`,`v2x_polyarchy`) #need to specify accurate political freedom variable
-Caid<-rename(Caid, country_name = Recipient)
-Caid<-rename(Caid, china_constant2017usd=total_constant)
-ITU<-rename(ITU, country_name = Country)
+GDP["Country.or.Area"][GDP["Country.or.Area"] == "CÃ´te d'Ivoire"] <- "Cote d'Ivoire"
+GDP["Country.or.Area"][GDP["Country.or.Area"] == "Congo"] <- "Republic of the Congo"
+GDP["Country.or.Area"][GDP["Country.or.Area"] == " Former Sudan"]<- "South Sudan"
+GDP<-subset(GDP, `Country.or.Area` %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cabo Verde","Cameroon",
+                                 "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
+                                 "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
+                                 "Eritrea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
+                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
+                                 "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
+                                 "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
+                                 "Zambia","Zimbabwe"))
+GDP<- GDP %>%
+  filter(`Year` > "2009" & `Year` < "2018") %>%
+  select(`Country.or.Area`,`Year`,`Value`)
+GDP<-rename(GDP,country=`Country.or.Area`)
+GDP<-rename(GDP,year=Year)
+GDP<-rename(GDP,gdp=Value)
+Caid<-rename(Caid, country = Recipient)
+Caid<-rename(Caid, caid=total_constant)
+ITU<-rename(ITU, country = Country)
 Caid<-rename(Caid,year=`Commitment Year`)
-USaid<-rename(USaid, country_name = Country.Name)
+USaid<-rename(USaid, country = Country.Name)
 ITU<-rename(ITU, year= Year)
-ITU<-rename(ITU, indicator_name=`Indicator name`)
-ITU<-rename(ITU, total_internet=Value) #total percent of individuals using internet
+ITU<-rename(ITU, indicator=`Indicator name`)
+ITU<-rename(ITU, internet=Value) #total percent of individuals using internet
 ITU<- ITU %>%
-  select(`country_name`,`year`,`total_internet`)
+  select(`country`,`year`,`internet`)
 USaid<-rename(USaid, year=`Fiscal.Year`)
-USaid<-rename(USaid, us_constant2021usd=`constant_amount`) #US aid variable, constant USD
+USaid<-rename(USaid, usaid=`constant_amount`) #US aid variable, constant USD. Need to make all dollar variables constant at same year
 USaid<-USaid %>% 
-  select(`country_name`,`year`,`constant_disbursements`)
+  select(`country`,`year`,`usaid`)
 USaid<-transform(USaid, year=as.numeric(year))
-data<- full_join(Caid, DSP, by = c("country_name","year")) %>%
-  full_join(., ITU, by = c("country_name","year")) %>%
-  full_join(., USaid, by = c("country_name","year")) %>%
-  full_join(., VDem, by = c("country_name","year"))
+DSP<-rename(DSP,country=country_name)
+VDem<-rename(VDem,country=country_name)
+data<- full_join(Caid, DSP, by = c("country","year")) %>%
+  full_join(., ITU, by = c("country","year")) %>%
+  full_join(., USaid, by = c("country","year")) %>%
+  full_join(., VDem, by = c("country","year")) %>%
+  full_join(., GDP, by = c("country","year"))
 ```
 ```{r Analysis}
 #Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
