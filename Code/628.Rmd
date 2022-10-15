@@ -24,16 +24,22 @@ unzip(here("Data", "GDP", "UNdata_Export_20221013_234232609.zip"))
 GDP<-read.csv(here("Code", "UNdata_Export_20221013_234232609.csv"))
 ```
 ```{r Cleaning, include=FALSE,warning=FALSE,message=FALSE}
-Caid["Recipient"][Caid["Recipient"] == "Congo"] <- "Republic of Congo"
+Caid["Recipient"][Caid["Recipient"] == "Congo"] <- "Republic of the Congo"
 Caid<-Caid[!(Caid$Recipient=="Africa, regional"),]
 Caid<- Caid %>%
   filter(`Recipient Region` == "Africa" & `Recommended For Aggregates` == "Yes" & `Commitment Year` > "2009") %>%
-  select(`AidData TUFF Project ID`,`Recipient`,`Commitment Year`,`Amount (Original Currency)`,
+  select(`Recipient`,`Commitment Year`,`Amount (Nominal)`,
          `Amount (Constant USD2017)`)
-Caid<- na.omit(Caid)
-Caid<- Caid %>%
+Caid<-na.omit(Caid)
+Caid1<- Caid %>%
   group_by(`Recipient`,`Commitment Year`) %>%
-  summarise(total_constant=sum(`Amount (Constant USD2017)`))
+  summarise(caid_usdconstant2017=sum(`Amount (Constant USD2017)`))
+Caid2<- Caid %>%
+  group_by(`Recipient`,`Commitment Year`) %>%
+  summarise(caid_usdcurrent=sum(`Amount (Nominal)`))
+Caid<- full_join(Caid1, Caid2, by = c("Recipient","Commitment Year"))
+Caid<-rename(Caid,year=`Commitment Year`)
+Caid<-rename(Caid, country = Recipient)
 DSP["country_name"][DSP["country_name"] == "Cape Verde"] <- "Cabo Verde"
 DSP["country_name"][DSP["country_name"] == "Ivory Coast"] <- "Cote d'Ivoire"
 DSP["country_name"][DSP["country_name"] == "The Gambia"] <- "Gambia"
@@ -43,12 +49,13 @@ DSP<- subset(DSP, country_name %in% c("Algeria","Angola","Benin","Botswana","Bur
                                  "Eritrea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
                                  "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
-                                 "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
+                                 "Sao Tame and Principe","Senegal","Seychelles","Sierra Leone","Somalia",
                                  "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
 DSP<- DSP %>%
   filter(`year` > "2009" & year < "2018") %>%
   select(`country_name`,`country_text_id`,`country_id`,`year`,`COWcode`,`v2smgovsmcenprc`,`v2smonper`)
+DSP<-rename(DSP,country=country_name)
 ITU<- subset(ITU, `Indicator name` %in% c("Individuals using the Internet, total (%)"))
 ITU["Country"][ITU["Country"] == "Central African Rep."] <- "Central African Republic"
 ITU["Country"][ITU["Country"] == "Congo (Rep. of the)"] <- "Republic of the Congo"
@@ -60,12 +67,18 @@ ITU<- subset(ITU, Country %in% c("Algeria","Angola","Benin","Botswana","Burundi"
                                  "Eritrea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
                                  "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
-                                 "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
+                                 "Sao Tame and Principe","Senegal","Seychelles","Sierra Leone","Somalia",
                                  "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
 ITU<- ITU %>%
   filter(`Year` > "2009" & `Year` < "2018") %>%
   select(`Country`,`Indicator name`, `Year`,`Value`)
+ITU<-rename(ITU, country = Country)
+ITU<-rename(ITU, year= Year)
+ITU<-rename(ITU, indicator=`Indicator name`)
+ITU<-rename(ITU, internet=Value) #total percent of individuals using internet
+ITU<- ITU %>%
+  select(`country`,`year`,`internet`)
 USaid<- subset(USaid, `Transaction.Type.Name` %in% c("Disbursements"))
 USaid["Country.Name"][USaid["Country.Name"] == "Congo (Brazzaville)"]<- "Republic of the Congo"
 USaid["Country.Name"][USaid["Country.Name"] == "Congo (Kinshasa)"]<- "Democratic Republic of the Congo"
@@ -76,12 +89,19 @@ USaid<- subset(USaid, `Country.Name` %in% c("Algeria","Angola","Benin","Botswana
                                  "Eritrea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
                                  "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
-                                 "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
+                                 "Sao Tame and Principe","Senegal","Seychelles","Sierra Leone","Somalia",
                                  "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
 USaid<- USaid %>%
   filter(`Fiscal.Year` > "2009" & `Fiscal.Year` < "2018") %>%
-  select(`Country.Name`,`Fiscal.Year`,`Transaction.Type.Name`,`constant_amount`)
+  select(`Country.Name`,`Fiscal.Year`,`constant_amount`,`current_amount`)
+USaid<-rename(USaid, country = Country.Name)
+USaid<-rename(USaid, year=`Fiscal.Year`)
+USaid<-rename(USaid, usaid_usdconstant2020=`constant_amount`) #US aid variable, constant USD. Need to make all dollar variables constant at same year
+USaid<-rename(USaid, usaid_usdcurrent=`current_amount`)
+USaid<-USaid %>% 
+  select(`country`,`year`,`usaid_usdconstant2020`,`usaid_usdcurrent`)
+USaid<-transform(USaid, year=as.numeric(year))
 VDem["country_name"][VDem["country_name"] == "Cape Verde"] <- "Cabo Verde"
 VDem["country_name"][VDem["country_name"] == "The Gambia"] <- "Gambia"
 VDem<-subset(VDem, `country_name` %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cabo Verde","Cameroon",
@@ -90,12 +110,13 @@ VDem<-subset(VDem, `country_name` %in% c("Algeria","Angola","Benin","Botswana","
                                  "Eritrea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
                                  "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
-                                 "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
+                                 "Sao Tame and Principe","Senegal","Seychelles","Sierra Leone","Somalia",
                                  "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
 VDem<- VDem %>%
   filter(`year` > "2009" & `year` < "2018") %>%
   select(`country_name`,`year`,`v2x_polyarchy`) #need to specify accurate political freedom variable
+VDem<-rename(VDem,country=country_name)
 GDP["Country.or.Area"][GDP["Country.or.Area"] == "CÃ´te d'Ivoire"] <- "Cote d'Ivoire"
 GDP["Country.or.Area"][GDP["Country.or.Area"] == "Congo"] <- "Republic of the Congo"
 GDP["Country.or.Area"][GDP["Country.or.Area"] == " Former Sudan"]<- "South Sudan"
@@ -105,7 +126,7 @@ GDP<-subset(GDP, `Country.or.Area` %in% c("Algeria","Angola","Benin","Botswana",
                                  "Eritrea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
                                  "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda",
-                                 "Sao Tame and Principe","Senegal","Seychelles","Siera Leone","Somalia",
+                                 "Sao Tame and Principe","Senegal","Seychelles","Sierra Leone","Somalia",
                                  "South Africa","South Sudan","Sudan","Tanzania","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
 GDP<- GDP %>%
@@ -113,29 +134,13 @@ GDP<- GDP %>%
   select(`Country.or.Area`,`Year`,`Value`)
 GDP<-rename(GDP,country=`Country.or.Area`)
 GDP<-rename(GDP,year=Year)
-GDP<-rename(GDP,gdp=Value)
-Caid<-rename(Caid, country = Recipient)
-Caid<-rename(Caid, caid=total_constant)
-ITU<-rename(ITU, country = Country)
-Caid<-rename(Caid,year=`Commitment Year`)
-USaid<-rename(USaid, country = Country.Name)
-ITU<-rename(ITU, year= Year)
-ITU<-rename(ITU, indicator=`Indicator name`)
-ITU<-rename(ITU, internet=Value) #total percent of individuals using internet
-ITU<- ITU %>%
-  select(`country`,`year`,`internet`)
-USaid<-rename(USaid, year=`Fiscal.Year`)
-USaid<-rename(USaid, usaid=`constant_amount`) #US aid variable, constant USD. Need to make all dollar variables constant at same year
-USaid<-USaid %>% 
-  select(`country`,`year`,`usaid`)
-USaid<-transform(USaid, year=as.numeric(year))
-DSP<-rename(DSP,country=country_name)
-VDem<-rename(VDem,country=country_name)
+GDP<-rename(GDP,gdp_usdconstant2015=Value)
 data<- full_join(Caid, DSP, by = c("country","year")) %>%
   full_join(., ITU, by = c("country","year")) %>%
   full_join(., USaid, by = c("country","year")) %>%
   full_join(., VDem, by = c("country","year")) %>%
   full_join(., GDP, by = c("country","year"))
+data<-na.omit(data)
 ```
 ```{r Analysis}
 #Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
