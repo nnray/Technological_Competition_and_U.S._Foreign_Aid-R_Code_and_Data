@@ -4,7 +4,7 @@ author: "Nicholas Ray"
 date: "9/20/2022"
 output: pdf_document
 ---
-```{r Library, include=FALSE,warning=FALSE,message=FALSE}
+```{r libraries, include=FALSE,warning=FALSE,message=FALSE}
 library(here)
 library(readxl)
 library(utils)
@@ -24,7 +24,7 @@ library(shiny)
 library(shinyjs)
 library(tidyverse)
 ```
-```{r Data, include=FALSE,warning=FALSE,message=FALSE}
+```{r data, include=FALSE,warning=FALSE,message=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
 unzip(here("Data", "Aid", "aiddataChina", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.zip"))
 Caid<-read_excel(here("Code", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.xlsx"), sheet = 5)
@@ -36,11 +36,8 @@ unzip(here("Data", "InternetInfrastructure", "ddd_dataset.zip"))
 ITU<-read_excel(here("Code", "ddd_dataset.xlsx"))
 unzip(here("Data", "GDP", "UNdata_Export_20221013_234232609.zip"))
 GDP<-read.csv(here("Code", "UNdata_Export_20221013_234232609.csv"))
-deflator<-read.csv(here("Data","GDP","USAGDPDEFAISMEI.csv"))
-unzip(here("Data","Shapefiles","Africa","afr_g2014_2013_0.zip"))
-Africa<-st_read(here("Code","afr_g2014_2013_0.shp"))
 ```
-```{r Cleaning, include=FALSE,warning=FALSE,message=FALSE}
+```{r cleaning, include=FALSE,warning=FALSE,message=FALSE}
 Caid["Recipient"][Caid["Recipient"] == "Congo"] <- "Republic of the Congo"
 Caid<-Caid[!(Caid$Recipient=="Africa, regional"),]
 Caid<- Caid %>%
@@ -196,6 +193,9 @@ data<- full_join(Caid, DSP, by = c("country","year")) %>%
   full_join(., USaid, by = c("country","year")) %>%
   full_join(., VDem, by = c("country","year")) %>%
   full_join(., GDP, by = c("country","year"))
+```
+```{r rebasing}
+deflator<-read.csv(here("Data","GDP","USAGDPDEFAISMEI.csv"))
 #GDP deflator found here https://fred.stlouisfed.org/series/usagdpdefaismei
 deflator<- rename(deflator,value=USAGDPDEFAISMEI)
 deflator<- subset(deflator,value < 103 & value > 91) %>%
@@ -209,12 +209,23 @@ data$usaid<-diag(data$usaid_usdcurrent) %*% deflator
 data<- data %>%
   select(-caid_usdconstant2017,-caid_usdcurrent,-usaid_usdconstant2020,-usaid_usdcurrent) %>%
   rename(gdp=gdp_usdconstant2015)
-Africa<- rename(Africa, country=ADM0_NAME)
-#data<- data %>%
-  #left_join(Africa, by=c("country"))
+```
+```{r shapefile}
+unzip(here("Data","Shapefiles","Africa","afr_g2014_2013_0.zip"))
+Africa<-st_read(here("Code","afr_g2014_2013_0.shp"))
+Africa<- Africa %>%
+  rename(country=ADM0_NAME) %>% 
+  select(country, geometry)
+Africa[7,1]<- "Cabo Verde"
+Africa[12,1]<- "Cote d'Ivoire"
+Africa[11,1]<- "Republic of the Congo"
+Africa[44,1]<- "Tanzania"
+data<-Africa %>%
+  right_join(data)
+tm_shape(data) + tm_polygons("caid") + tm_legend(outside = TRUE, hist.width = 2) + tm_layout(frame = FALSE)
 #then, decide how to deal with missing data. 0's? Drop? Imputation?
 ```
-```{r Analysis}
+```{r analysis}
 #Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
 #Proxy for Big Tech company presence as opposed to restrictive Chinese media? " Online media perspectives (C) (v2smonper)"
 ```
