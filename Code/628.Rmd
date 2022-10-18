@@ -23,6 +23,7 @@ library(geodist)
 library(shiny)
 library(shinyjs)
 library(tidyverse)
+library(corrplot)
 ```
 ```{r data, include=FALSE,warning=FALSE,message=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
@@ -90,6 +91,7 @@ DSP1<- DSP%>%
 DSP<- DSP1 %>%
   left_join(DSP, by = c("country", "year"))
 ITU<- subset(ITU, `Indicator name` %in% c("Individuals using the Internet, total (%)"))
+ITU<- transform(ITU, internet=as.numeric(internet))
 ITU["Country"][ITU["Country"] == "Central African Rep."] <- "Central African Republic"
 ITU["Country"][ITU["Country"] == "Congo (Rep. of the)"] <- "Republic of the Congo"
 ITU["Country"][ITU["Country"] == "Côte d'Ivoire"] <- "Cote d'Ivoire"
@@ -193,6 +195,12 @@ data<- full_join(Caid, DSP, by = c("country","year")) %>%
   full_join(., USaid, by = c("country","year")) %>%
   full_join(., VDem, by = c("country","year")) %>%
   full_join(., GDP, by = c("country","year"))
+data<-data %>%
+  mutate(log_usaid=log(usaid)) %>%
+  mutate(log_caid=log(caid)) %>%
+  mutate(log_gdp=log(gdp))
+data["caid"][is.na(data["caid"])] <- 0
+data["log_caid"][data["log_caid"] == -Inf] <- 0
 ```
 ```{r rebasing}
 deflator<-read.csv(here("Data","GDP","USAGDPDEFAISMEI.csv"))
@@ -228,4 +236,5 @@ tm_shape(data) + tm_polygons("caid") + tm_legend(outside = TRUE, hist.width = 2)
 ```{r analysis}
 #Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
 #Proxy for Big Tech company presence as opposed to restrictive Chinese media? " Online media perspectives (C) (v2smonper)"
+summary(lm(log_usaid~log_caid*v2smgovsmcenprc+internet+v2x_polyarchy+log_gdp,data=data))
 ```
