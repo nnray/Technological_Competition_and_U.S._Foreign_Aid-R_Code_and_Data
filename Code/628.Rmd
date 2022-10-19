@@ -23,7 +23,8 @@ library(geodist)
 library(shiny)
 library(shinyjs)
 library(tidyverse)
-library(corrplot)
+library(plm)
+library(lmtest)
 ```
 ```{r data, include=FALSE,warning=FALSE,message=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
@@ -91,7 +92,6 @@ DSP1<- DSP%>%
 DSP<- DSP1 %>%
   left_join(DSP, by = c("country", "year"))
 ITU<- subset(ITU, `Indicator name` %in% c("Individuals using the Internet, total (%)"))
-ITU<- transform(ITU, internet=as.numeric(internet))
 ITU["Country"][ITU["Country"] == "Central African Rep."] <- "Central African Republic"
 ITU["Country"][ITU["Country"] == "Congo (Rep. of the)"] <- "Republic of the Congo"
 ITU["Country"][ITU["Country"] == "Côte d'Ivoire"] <- "Cote d'Ivoire"
@@ -112,6 +112,7 @@ ITU<-rename(ITU, country = Country)
 ITU<-rename(ITU, year= Year)
 ITU<-rename(ITU, indicator=`Indicator name`)
 ITU<-rename(ITU, internet=Value) #total percent of individuals using internet
+ITU<- transform(ITU, internet=as.numeric(internet))
 ITU<- ITU %>%
   select(`country`,`year`,`internet`)
 ITU1<- ITU%>% 
@@ -195,12 +196,6 @@ data<- full_join(Caid, DSP, by = c("country","year")) %>%
   full_join(., USaid, by = c("country","year")) %>%
   full_join(., VDem, by = c("country","year")) %>%
   full_join(., GDP, by = c("country","year"))
-data<-data %>%
-  mutate(log_usaid=log(usaid)) %>%
-  mutate(log_caid=log(caid)) %>%
-  mutate(log_gdp=log(gdp))
-data["caid"][is.na(data["caid"])] <- 0
-data["log_caid"][data["log_caid"] == -Inf] <- 0
 ```
 ```{r rebasing}
 deflator<-read.csv(here("Data","GDP","USAGDPDEFAISMEI.csv"))
@@ -217,6 +212,12 @@ data$usaid<-diag(data$usaid_usdcurrent) %*% deflator
 data<- data %>%
   select(-caid_usdconstant2017,-caid_usdcurrent,-usaid_usdconstant2020,-usaid_usdcurrent) %>%
   rename(gdp=gdp_usdconstant2015)
+data["caid"][is.na(data["caid"])] <- 0
+data<-data %>%
+  mutate(log_usaid=log(usaid)) %>%
+  mutate(log_caid=log(caid)) %>%
+  mutate(log_gdp=log(gdp))
+data["log_caid"][data["log_caid"] == -Inf] <- 0
 ```
 ```{r shapefile}
 unzip(here("Data","Shapefiles","Africa","afr_g2014_2013_0.zip"))
@@ -236,5 +237,13 @@ tm_shape(data) + tm_polygons("caid") + tm_legend(outside = TRUE, hist.width = 2)
 ```{r analysis}
 #Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
 #Proxy for Big Tech company presence as opposed to restrictive Chinese media? " Online media perspectives (C) (v2smonper)"
-summary(lm(log_usaid~log_caid*v2smgovsmcenprc+internet+v2x_polyarchy+log_gdp,data=data))
+#political variable?
+pdim(data)
+model1<-plm(log_usaid~v2smgovsmcenprc+log_caid+log_gdp+internet+v2x_polyarchy,index = c("country","year"),data=data)
+pbgtest(model1)
+c1<-vcovHC(model1,cluster="group")
+coeftest(model1,vcov. = c1)
+model2<-plm(log_usaid~v2smgovsmcenprc+log_caid+log_gdp+internet+v2x_polyarchy,index = c("country","year"),data=data,model="random",random.method = "walhus")
+c2<-vcovHC(model2,cluster="group")
+coeftest(model2,vcov. = c2)
 ```
