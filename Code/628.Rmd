@@ -22,6 +22,7 @@ library(spData)
 library(geodist)
 library(shiny)
 library(shinyjs)
+library(vars)
 library(tidyverse)
 library(plm)
 library(lmtest)
@@ -218,8 +219,9 @@ data<-data %>%
   mutate(log_caid=log(caid)) %>%
   mutate(log_gdp=log(gdp))
 data["log_caid"][data["log_caid"] == -Inf] <- 0
+data["log_usaid"][is.na(data["log_usaid"])] <- 0
 ```
-```{r shapefile}
+```{r shapefile, eval=FALSE, include=FALSE}
 unzip(here("Data","Shapefiles","Africa","afr_g2014_2013_0.zip"))
 Africa<-st_read(here("Code","afr_g2014_2013_0.shp"))
 Africa<- Africa %>%
@@ -233,17 +235,44 @@ data<-Africa %>%
   right_join(data)
 tm_shape(data) + tm_polygons("caid") + tm_legend(outside = TRUE, hist.width = 2) + tm_layout(frame = FALSE)
 #then, decide how to deal with missing data. 0's? Drop? Imputation?
+#went with 0's for caid, and the two negative values for usaid
 ```
 ```{r analysis}
 #Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
 #Proxy for Big Tech company presence as opposed to restrictive Chinese media? " Online media perspectives (C) (v2smonper)"
-#political variable?
-pdim(data)
-model1<-plm(log_usaid~v2smgovsmcenprc+log_caid+log_gdp+internet+v2x_polyarchy,index = c("country","year"),data=data)
-pbgtest(model1)
-c1<-vcovHC(model1,cluster="group")
-coeftest(model1,vcov. = c1)
-model2<-plm(log_usaid~v2smgovsmcenprc+log_caid+log_gdp+internet+v2x_polyarchy,index = c("country","year"),data=data,model="random",random.method = "walhus")
-c2<-vcovHC(model2,cluster="group")
-coeftest(model2,vcov. = c2)
+#Political variable? v2x_polyarchy
+#
+#Casey's recommended steps: 
+#1) Determine N and T
+data_panel<-pdata.frame(data, index=c("country", "year"))
+pdim(data_panel)
+#
+#2) Estimate pooled, RE, CRE models
+#pooled:
+model_pooled<-plm(log_usaid~v2smgovsmcenprc*log_caid+log_gdp+internet+v2x_polyarchy,data=data_panel)
+pbgtest(model_pooled)
+c_pooled<-vcovHC(model_pooled,cluster = "group")
+signif(coeftest(model_pooled, vcov=c_pooled))
+#RE:
+model_re<-plm(log_usaid~v2smgovsmcenprc+log_caid+log_gdp+internet+v2x_polyarchy+factor(country)+factor(year),data=data_panel,model="random",random.method = "walhus")
+c_re<-vcovHC(model_re,cluster="group")
+coeftest(model_re,vcov. = c_re)
+pbgtest(model_re)
+#3) nested model test
+#4) if reject, use (LSDV,within)/FD
+#5) if can't reject, use vanilla, pooled model with clustered std errors
+#
+#FE LSDV
+model_fe<-plm(log_usaid~v2smgovsmcenprc+log_caid+log_gdp+internet+v2x_polyarchy,data = data_panel,effect = "individual",model = "within")
+summary(model_fe)
+#RE2
+model_re2<-plm(log_usaid~v2smgovsmcenprc+log_caid+log_gdp+internet+v2x_polyarchy,data = data_panel,effect = "individual",model = "random")
+c_re2<-vcovHC(model_re2,cluster = "group")
+coeftest(model_re2,vcov. = c_re2)
+wtf<-lm(log_usaid~log_caid+v2smgovsmcenprc+log_gdp+internet+v2x_polyarchy,data=data)
+summary(wtf)
+cor(data$v2smgovsmcenprc,data$v2x_polyarchy)
+```
+```{r visuals}
+
 ```
