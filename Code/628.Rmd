@@ -6,6 +6,7 @@ output: pdf_document
 ---
 ```{r libraries, include=FALSE,warning=FALSE,message=FALSE}
 library(here)
+library(car)
 library(readxl)
 library(utils)
 library(spatialreg)
@@ -26,6 +27,8 @@ library(vars)
 library(tidyverse)
 library(plm)
 library(lmtest)
+library(marginaleffects)
+library(sjPlot)
 ```
 ```{r data, include=FALSE,warning=FALSE,message=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
@@ -91,15 +94,6 @@ DSP<- DSP %>%
   filter(`year` > "2009" & year < "2018") %>%
   select(`country_name`,`country_text_id`,`country_id`,`year`,`COWcode`,`dsp`)
 DSP<-rename(DSP,country=country_name)
-DSP1<- DSP%>% 
-  group_by(country) %>% 
-  mutate(Earliest.Year = 2010) %>%
-  select(country,Earliest.Year) %>% 
-  distinct() %>%
-  expand(year = Earliest.Year:2017, Earliest.Year) %>%
-  select(-Earliest.Year)
-DSP<- DSP1 %>%
-  left_join(DSP, by = c("country", "year"))
 ITU<- subset(ITU, `Indicator name` %in% c("Individuals using the Internet, total (%)"))
 ITU["Country"][ITU["Country"] == "Central African Rep."] <- "Central African Republic"
 ITU["Country"][ITU["Country"] == "Congo (Rep. of the)"] <- "Republic of the Congo"
@@ -123,15 +117,8 @@ ITU<-rename(ITU, internet=Value) #total percent of individuals using internet
 ITU<- transform(ITU, internet=as.numeric(internet))
 ITU<- ITU %>%
   select(`country`,`year`,`internet`)
-ITU1<- ITU%>% 
-  group_by(country) %>% 
-  mutate(Earliest.Year = 2010) %>%
-  select(country,Earliest.Year) %>% 
-  distinct() %>%
-  expand(year = Earliest.Year:2017, Earliest.Year) %>%
-  select(-Earliest.Year)
-ITU<- ITU1 %>%
-  left_join(ITU, by = c("country", "year"))
+#replace Libya's missing values... not sure how to justify this, but chose lowest observed value
+ITU["internet"][is.na(ITU["internet"])] <- 14.000000
 USaid<- subset(USaid, `Transaction.Type.Name` %in% c("Disbursements"))
 USaid["Country.Name"][USaid["Country.Name"] == "Congo (Brazzaville)"]<- "Republic of the Congo"
 USaid["Country.Name"][USaid["Country.Name"] == "Congo (Kinshasa)"]<- "Democratic Republic of the Congo"
@@ -171,15 +158,6 @@ Polity<-subset(Polity, `country` %in% c("Algeria","Angola","Benin","Botswana","B
 Polity<- Polity %>%
   filter(`year` > "2009" & `year` < "2018") %>%
   select(`country`,`year`,`polity2`) 
-Polity1<- Polity%>% 
-  group_by(country) %>% 
-  mutate(Earliest.Year = 2010) %>%
-  select(country,Earliest.Year) %>% 
-  distinct() %>%
-  expand(year = Earliest.Year:2017, Earliest.Year) %>%
-  select(-Earliest.Year)
-Polity<- Polity1 %>%
-  left_join(Polity, by = c("country", "year"))
 GDP["Country.or.Area"][GDP["Country.or.Area"] == "CÃ´te d'Ivoire"] <- "Cote d'Ivoire"
 GDP["Country.or.Area"][GDP["Country.or.Area"] == "Congo"] <- "Republic of the Congo"
 GDP["Country.or.Area"][GDP["Country.or.Area"] == " Former Sudan"]<- "South Sudan"
@@ -241,45 +219,22 @@ Africa[44,1]<- "Tanzania"
 data<-Africa %>%
   right_join(data)
 tm_shape(data) + tm_polygons("caid") + tm_legend(outside = TRUE, hist.width = 2) + tm_layout(frame = FALSE)
-#then, decide how to deal with missing data. 0's? Drop? Imputation?
-#went with 0's for caid, and the two negative values for usaid
 ```
 ```{r analysis}
-#Internet Freedom item? "Government social media censorship in practice (C) (v2smgovsmcenprc)"
-#Proxy for Big Tech company presence as opposed to restrictive Chinese media? " Online media perspectives (C) (v2smonper)"
-#Political variable? v2x_polyarchy
-#
-#Casey's recommended steps: 
-#1) Determine N and T
 data_panel<-pdata.frame(data, index=c("country", "year"))
 pdim(data_panel)
-#
-#2) Estimate pooled, RE, CRE models
-#pooled:
-model_pooled<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data=data_panel)
-pbgtest(model_pooled)
-c_pooled<-vcovHC(model_pooled,cluster = "group")
-signif(coeftest(model_pooled, vcov=c_pooled))
-#RE:
-model_re<-plm(log_usaid~v2smgovsmcenprc+log_caid+log_gdp+internet+v2x_polyarchy+factor(country)+factor(year),data=data_panel,model="random",random.method = "walhus")
+model_pooled<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2+factor(year),data=data_panel)
+model_re<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data=data_panel,effect = "twoways",model="random")
 c_re<-vcovHC(model_re,cluster="group")
-coeftest(model_re,vcov. = c_re)
-pbgtest(model_re)
-#3) nested model test
-#4) if reject, use (LSDV,within)/FD
-#5) if can't reject, use vanilla, pooled model with clustered std errors
-#
-#FE LSDV
-model_fe<-plm(log_usaid~v2smgovsmcenprc+log_caid+log_gdp+internet+v2x_polyarchy,data = data_panel,effect = "individual",model = "within")
-summary(model_fe)
-#RE2
-model_re2<-plm(log_usaid~v2smgovsmcenprc+log_caid+log_gdp+internet+v2x_polyarchy,data = data_panel,effect = "individual",model = "random")
-c_re2<-vcovHC(model_re2,cluster = "group")
-coeftest(model_re2,vcov. = c_re2)
-wtf<-lm(log_usaid~log_caid+v2smgovsmcenprc+log_gdp+internet+v2x_polyarchy,data=data)
-summary(wtf)
-cor(data$v2smgovsmcenprc,data$v2x_polyarchy)
+linearHypothesis(model_re, c("dsp=0"),vcov=c_re)
+model_fe<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data = data_panel,effect = "twoways",model = "within")
+c_fe<-vcovHC(model_fe,cluster="group")
+linearHypothesis(model_fe, c("dsp=0"), vcov=c_fe)
+#me<-margins(model_fe, variables = "dsp",vcov=c_fe)
+#me2<-marginaleffects(model_fe, type = "probs") #same nummbers as margins()
 ```
 ```{r visuals}
-
+data_pd<-pdata.frame(data)
+plot_model(model_fe, type = "pred", terms = "dsp", vcov.fun = c_fe)
+predict(model_fe, newdata = data_pd)
 ```
