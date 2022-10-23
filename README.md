@@ -1,0 +1,33 @@
+This repo contains all of the data and code I used for my analyses.
+
+For full transparency, all of the data can be found at the respective links below. None of it was altered in any way before being read into R.
+
+"us_foreign_aid_country" from https://foreignassistance.gov/data
+
+"API_NY.GDP.PCAP.CD_DS2_en_csv_v2_4498542" from https://data.worldbank.org/indicator/NY.GDP.PCAP.CD
+
+"ITU_ICTPriceBaskets_2008-2021" from https://www.itu.int/en/ITU-D/Statistics/Dashboards/Pages/IPB.aspx
+
+"DSP-Dataset-v4" from http://digitalsocietyproject.org/data/
+
+"ddd_dataset" from https://www.itu.int/en/ITU-D/Statistics/Dashboards/Pages/Digital-Development.aspx
+
+"API_IT.NET.USER.ZS_DS2_en_csv_v2_4546520" from https://data.worldbank.org/indicator/IT.NET.USER.ZS?most_recent_year_desc=false
+ 
+"AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0" from https://www.aiddata.org/data/aiddatas-global-chinese-development-finance-dataset-version-2-0
+
+"V-Dem-CY-Core-v12" from https://www.v-dem.net/vdemds.html
+
+"ddrevisited_data_v1" from https://sites.google.com/site/joseantoniocheibub/datasets/dd
+
+"FOTN 2011-2021" Score Data from https://freedomhouse.org/report/freedom-net
+
+"government-requests" from https://transparency.fb.com/data/government-data-requests/
+
+"UNdata_Export_20221013_230550739" from https://data.un.org/Data.aspx?d=SNAAMA&f=grID%3A101%3BcurrID%3AUSD%3BpcFlag%3A1
+
+"afr_g2014_2013_0" from https://geoportal.icpac.net/layers/geonode%3Aafr_g2014_2013_0
+
+"USAGDPDEFAISMEI" from https://fred.stlouisfed.org/series/usagdpdefaismei
+
+"p5v2018" from https://www.systemicpeace.org/inscrdata.html
