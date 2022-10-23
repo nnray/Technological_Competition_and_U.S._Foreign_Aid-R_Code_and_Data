@@ -1,6 +1,6 @@
-This repo contains all of the data and code used for analysis.
+This repo contains all of the data and code I used for my analyses.
 
-The data held here were gathered from the following places:
+For full transparency, all of the data can be found at the respective links below. None of it was altered in any way before being read into R.
 
 us_foreign_aid_country from https://foreignassistance.gov/data
 
