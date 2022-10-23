@@ -10,6 +10,7 @@ library(car)
 library(readxl)
 library(utils)
 library(spatialreg)
+library(stargazer)
 library(rgdal)
 library(ggplot2)
 library(utils)
@@ -233,8 +234,10 @@ linearHypothesis(model_fe, c("dsp=0"), vcov=c_fe)
 #me<-margins(model_fe, variables = "dsp",vcov=c_fe)
 #me2<-marginaleffects(model_fe, type = "probs") #same nummbers as margins()
 ```
-```{r visuals}
-data_pd<-pdata.frame(data)
-plot_model(model_fe, type = "pred", terms = "dsp", vcov.fun = c_fe)
-predict(model_fe, newdata = data_pd)
+```{r plots}
+dsp_plot<-plot_cap(model_fe, condition="dsp", vcov = c_fe)
+dsp_plot<-dsp_plot+labs(title = "Figure 1: Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", x="Internet Freedom",y="Logged U.S. Foreign Aid")
+```
+```{r table1, results='asis'}
+stargazer(model_fe,type = "latex",title = "U.S. logged aid with Covariates, Two-way Fixed Effects", se=list(NULL,c_fe))
 ```
