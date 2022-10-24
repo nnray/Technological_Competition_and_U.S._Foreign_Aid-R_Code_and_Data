@@ -30,6 +30,7 @@ library(plm)
 library(lmtest)
 library(marginaleffects)
 library(sjPlot)
+library(urca)
 ```
 ```{r data, include=FALSE,warning=FALSE,message=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
@@ -222,6 +223,10 @@ data<-Africa %>%
 tm_shape(data) + tm_polygons("caid") + tm_legend(outside = TRUE, hist.width = 2) + tm_layout(frame = FALSE)
 ```
 ```{r analysis}
+summary(ur.df(data$dsp)) 
+summary(ur.df(data$log_usaid))
+summary(ur.df(data$log_caid))
+summary(ur.df(data$log_gdp)) #nonstationary
 data_panel<-pdata.frame(data, index=c("country", "year"))
 pdim(data_panel)
 model_pooled<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2+factor(year),data=data_panel)
@@ -239,5 +244,6 @@ dsp_plot<-plot_cap(model_fe, condition="dsp", vcov = c_fe)
 dsp_plot<-dsp_plot+labs(title = "Figure 1: Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", x="Internet Freedom",y="Logged U.S. Foreign Aid")
 ```
 ```{r table1, results='asis'}
-stargazer(model_fe,type = "latex",title = "U.S. logged aid with Covariates, Two-way Fixed Effects", se=list(NULL,c_fe))
+stargazer(model_fe,type = "latex",title = "U.S. logged aid with Covariates, Two-way Fixed Effects")
+#se=list(NULL,c_fe)
 ```
