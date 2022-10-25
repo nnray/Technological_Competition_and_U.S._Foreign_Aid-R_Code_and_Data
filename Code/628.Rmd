@@ -32,6 +32,7 @@ library(margins)
 library(marginaleffects)
 library(sjPlot)
 library(urca)
+library(vtable)
 ```
 ```{r data, warning=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
@@ -225,6 +226,7 @@ data<-Africa %>%
 tm_shape(data) + tm_polygons("caid") + tm_legend(outside = TRUE, hist.width = 2) + tm_layout(frame = FALSE)
 ```
 ```{r analysis}
+sumtable(data)
 data_panel<-pdata.frame(data, index=c("country", "year"))
 pdim(data_panel)
 model_pooled<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2+factor(year),data=data_panel)
