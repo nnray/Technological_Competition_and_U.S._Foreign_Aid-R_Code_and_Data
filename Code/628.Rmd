@@ -238,6 +238,7 @@ c_fe<-vcovHC(model_fe,cluster="group")
 linearHypothesis(model_fe, c("dsp=0"), vcov=c_fe)
 #me<-margins(model_fe, variables = "dsp",vcov=c_fe)
 #me2<-marginaleffects(model_fe, type = "probs") #same nummbers as margins()
+#Must do panel unit root tests. Also look at equation balance from Paul/Pickup paper.
 ```
 ```{r plots}
 dsp_plot<-plot_cap(model_fe, condition="dsp", vcov = c_fe)
