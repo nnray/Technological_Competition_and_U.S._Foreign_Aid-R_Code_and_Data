@@ -28,11 +28,12 @@ library(vars)
 library(tidyverse)
 library(plm)
 library(lmtest)
+library(margins)
 library(marginaleffects)
 library(sjPlot)
 library(urca)
 ```
-```{r data, include=FALSE,warning=FALSE,message=FALSE}
+```{r data, warning=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
 unzip(here("Data", "Aid", "aiddataChina", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.zip"))
 Caid<-read_excel(here("Code", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.xlsx"), sheet = 5)
@@ -50,7 +51,7 @@ Caid<- subset(Caid, Recipient %in% c("Algeria","Angola","Benin","Botswana","Buru
                                  "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
                                  "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
                                  "Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
-                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Kenya","Lesotho","Liberia", "Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda","Senegal","Sierra Leone",
                                  "South Africa","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
@@ -84,7 +85,7 @@ DSP<- subset(DSP, country_name %in% c("Algeria","Angola","Benin","Botswana","Bur
                                  "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
                                  "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
                                  "Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
-                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Kenya","Lesotho","Liberia", "Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda","Senegal","Sierra Leone",
                                  "South Africa","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
@@ -105,7 +106,7 @@ ITU<- subset(ITU, Country %in% c("Algeria","Angola","Benin","Botswana","Burundi"
                                  "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
                                  "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
                                  "Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
-                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Kenya","Lesotho","Liberia", "Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda","Senegal","Sierra Leone",
                                  "South Africa","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
@@ -128,7 +129,7 @@ USaid<- subset(USaid, `Country.Name` %in% c("Algeria","Angola","Benin","Botswana
                                  "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
                                  "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
                                  "Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
-                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Kenya","Lesotho","Liberia", "Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda","Senegal","Sierra Leone",
                                  "South Africa","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
@@ -153,7 +154,7 @@ Polity<-subset(Polity, `country` %in% c("Algeria","Angola","Benin","Botswana","B
                                  "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
                                  "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
                                  "Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
-                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Kenya","Lesotho","Liberia", "Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda","Senegal","Sierra Leone",
                                  "South Africa","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
@@ -167,7 +168,7 @@ GDP<-subset(GDP, `Country.or.Area` %in% c("Algeria","Angola","Benin","Botswana",
                                  "Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire",
                                  "Democratic Republic of the Congo","Djibouti","Egypt","Equatorial Guinea",
                                  "Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau",
-                                 "Kenya","Lesotho","Liberia","Libya","Madagascar","Malawi","Mali","Mauritania",
+                                 "Kenya","Lesotho","Liberia","Madagascar","Malawi","Mali","Mauritania",
                                  "Mauritius","Morocco","Mozambique","Namibia","Niger","Nigeria","Rwanda","Senegal","Sierra Leone",
                                  "South Africa","Togo","Tunisia","Uganda",
                                  "Zambia","Zimbabwe"))
@@ -184,6 +185,7 @@ data<- full_join(Caid, DSP, by = c("country","year")) %>%
   full_join(., Polity, by = c("country","year")) %>%
   full_join(., GDP, by = c("country","year"))
 #eliminated Sudan, South Sudan, Eritrea, Somalia due to instability/missingness/absence of data from DSP/Polity
+#also probably elimate Libya due to internet missing data and U.S. invasion
 ```
 ```{r rebasing}
 deflator<-read.csv(here("Data","GDP","USAGDPDEFAISMEI.csv"))
@@ -193,7 +195,7 @@ deflator<- subset(deflator,value < 103 & value > 91) %>%
   select(value)
 deflator<- as.matrix(deflator)
 deflator<- deflator * 0.01
-deflator<- rep(deflator,times=45)
+deflator<- rep(deflator,times=44)
 deflator<- as.matrix(deflator)
 data$caid<-diag(data$caid_usdcurrent) %*% deflator
 data$usaid<-diag(data$usaid_usdcurrent) %*% deflator
@@ -208,7 +210,7 @@ data<-data %>%
 data["log_caid"][data["log_caid"] == -Inf] <- 0
 data["log_usaid"][is.na(data["log_usaid"])] <- 0
 ```
-```{r shapefile, eval=FALSE, include=FALSE}
+```{r shapefile, eval=FALSE}
 unzip(here("Data","Shapefiles","Africa","afr_g2014_2013_0.zip"))
 Africa<-st_read(here("Code","afr_g2014_2013_0.shp"))
 Africa<- Africa %>%
@@ -223,28 +225,36 @@ data<-Africa %>%
 tm_shape(data) + tm_polygons("caid") + tm_legend(outside = TRUE, hist.width = 2) + tm_layout(frame = FALSE)
 ```
 ```{r analysis}
-summary(ur.df(data$dsp)) 
-summary(ur.df(data$log_usaid))
-summary(ur.df(data$log_caid))
-summary(ur.df(data$log_gdp)) #nonstationary
 data_panel<-pdata.frame(data, index=c("country", "year"))
 pdim(data_panel)
 model_pooled<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2+factor(year),data=data_panel)
 model_re<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data=data_panel,effect = "twoways",model="random")
 c_re<-vcovHC(model_re,cluster="group")
-linearHypothesis(model_re, c("dsp=0"),vcov=c_re)
+linearHypothesis(model_re, c("dsp=0"),vcov=c_re) #fe better than pooled
 model_fe<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data = data_panel,effect = "twoways",model = "within")
 c_fe<-vcovHC(model_fe,cluster="group")
-linearHypothesis(model_fe, c("dsp=0"), vcov=c_fe)
-#me<-margins(model_fe, variables = "dsp",vcov=c_fe)
-#me2<-marginaleffects(model_fe, type = "probs") #same nummbers as margins()
-#Must do panel unit root tests. Also look at equation balance from Paul/Pickup paper.
+linearHypothesis(model_fe, c("dsp=0"), vcov=c_fe) #fe better than pooled
+phtest(model_fe, model_re) #individual error terms are correlated with the regressors (should use fe)
+summary(model_fe,vcov=c_fe)
+(exp(model_fe$coefficients[1])-1)*100 #dsp coefficient interpretation 
 ```
 ```{r plots}
+#margins(model_fe, variables = "dsp",vcov=c_fe)
+#margins(model_fe, variables = "log_caid",vcov=c_fe)
 dsp_plot<-plot_cap(model_fe, condition="dsp", vcov = c_fe)
-dsp_plot<-dsp_plot+labs(title = "Figure 1: Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", x="Internet Freedom",y="Logged U.S. Foreign Aid")
+dsp_plot<-dsp_plot+labs(title = "Figure 1: Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", subtitle = "Slope = 0.0206, meaning a one unit increase in internet freedom associated with a 2.08 percent increase in U.S. aid", x="Internet Freedom",y="Logged U.S. Foreign Aid")
+caid_plot<-plot_cap(model_fe, condition="log_caid", vcov = c_fe)
+caid_plot<-caid_plot+labs(title = "Figure 2: Average Marginal Effect of Logged Chinese Aid on Logged U.S. Foreign Aid", x="Logged Chinese Foreign Aid",subtitle = "Slope = 0.0058, meaning a one percent increase in Chinese aid associated with a 0.0058 percent increase in U.S. aid",y="Logged U.S. Foreign Aid")
 ```
-```{r table1, results='asis'}
-stargazer(model_fe,type = "latex",title = "U.S. logged aid with Covariates, Two-way Fixed Effects")
-#se=list(NULL,c_fe)
+```{r table1, message=FALSE, warning=FALSE, results='asis'}
+c_fe2<-sqrt(diag(c_fe))
+stargazer(model_fe,type = "latex",title = "Logged U.S. Aid and Covariates with Two-way Fixed Effects and Clustered SE's on Country",se=list(c_fe2))
+```
+```{r robustness, eval=FALSE}
+summary(ur.df(data$dsp))
+summary(ur.df(data$log_usaid))
+summary(ur.df(data$log_caid))
+summary(ur.df(data$log_gdp)) #nonstationary
+#Must do panel unit root tests. Also look at equation balance from Paul/Pickup paper.
+#Other robustness diagnostics
 ```
