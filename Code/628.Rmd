@@ -220,9 +220,6 @@ Africa[7,1]<- "Cabo Verde"
 Africa[12,1]<- "Cote d'Ivoire"
 Africa[11,1]<- "Republic of the Congo"
 Africa[44,1]<- "Tanzania"
-data<-Africa %>%
-  right_join(data)
-tm_shape(data) + tm_polygons("caid") + tm_legend(outside = TRUE, hist.width = 2) + tm_layout(frame = FALSE)
 ```
 ```{r analysis}
 data_panel<-pdata.frame(data, index=c("country", "year"))
@@ -231,12 +228,17 @@ model_pooled<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2+factor(year),d
 model_re<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data=data_panel,effect = "twoways",model="random")
 c_re<-vcovHC(model_re,cluster="group")
 linearHypothesis(model_re, c("dsp=0"),vcov=c_re) #fe better than pooled
+#fe model 1
 model_fe<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data = data_panel,effect = "twoways",model = "within")
 c_fe<-vcovHC(model_fe,cluster="group")
 linearHypothesis(model_fe, c("dsp=0"), vcov=c_fe) #fe better than pooled
 phtest(model_fe, model_re) #individual error terms are correlated with the regressors (should use fe)
 summary(model_fe,vcov=c_fe)
 (exp(model_fe$coefficients[1])-1)*100 #dsp coefficient interpretation 
+#fe model 2
+model_fe2<-plm(log_usaid~dsp*log_caid+log_gdp+internet+polity2,data = data_panel,effect = "twoways",model = "within")
+c_fe2<-vcovHC(model_fe2,cluster="group")
+summary(model_fe2,vcov=c_fe2)
 ```
 ```{r plots}
 #margins(model_fe, variables = "dsp",vcov=c_fe)
