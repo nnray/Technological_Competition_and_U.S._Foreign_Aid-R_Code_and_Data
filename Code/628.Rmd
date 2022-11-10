@@ -33,6 +33,8 @@ library(marginaleffects)
 library(sjPlot)
 library(urca)
 library(vtable)
+library(interplot)
+library(miceadds)
 ```
 ```{r data, warning=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
@@ -233,12 +235,21 @@ model_pooled<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2+factor(year),d
 model_re<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data=data_panel,effect = "twoways",model="random")
 c_re<-vcovHC(model_re,cluster="group")
 linearHypothesis(model_re, c("dsp=0"),vcov=c_re) #fe better than pooled
+#fe model
 model_fe<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data = data_panel,effect = "twoways",model = "within")
 c_fe<-vcovHC(model_fe,cluster="group")
 linearHypothesis(model_fe, c("dsp=0"), vcov=c_fe) #fe better than pooled
 phtest(model_fe, model_re) #individual error terms are correlated with the regressors (should use fe)
 summary(model_fe,vcov=c_fe)
-(exp(model_fe$coefficients[1])-1)*100 #dsp coefficient interpretation 
+(exp(model_fe$coefficients[1])-1)*100 #dsp coefficient interpretation
+#fe model, interaction
+model_fe_interact<-plm(log_usaid~dsp*log_caid+dsp+log_caid+log_gdp+internet+polity2,data = data_panel,effect = "twoways",model = "within")
+c_fe_interact<-vcovHC(model_fe_interact,cluster="group")
+summary(model_fe_interact,vcov=c_fe_interact)
+#fe model, interaction2 (equivalent, just checking)
+model_fe_interact2<-lm(log_usaid~dsp*log_caid+dsp+log_caid+log_gdp+internet+polity2+as.factor(country)+as.factor(year),data)
+c_fe_interact2<-vcovHC(model_fe_interact2,cluster="group")
+summary(model_fe_interact2,vcov=c_fe_interact2)
 ```
 ```{r plots}
 #margins(model_fe, variables = "dsp",vcov=c_fe)
@@ -247,6 +258,14 @@ dsp_plot<-plot_cap(model_fe, condition="dsp", vcov = c_fe)
 dsp_plot<-dsp_plot+labs(title = "Figure 1: Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", subtitle = "Slope = 0.0206, meaning a one unit increase in internet freedom associated with a 2.08 percent increase in U.S. aid", x="Internet Freedom",y="Logged U.S. Foreign Aid")
 caid_plot<-plot_cap(model_fe, condition="log_caid", vcov = c_fe)
 caid_plot<-caid_plot+labs(title = "Figure 2: Average Marginal Effect of Logged Chinese Aid on Logged U.S. Foreign Aid", x="Logged Chinese Foreign Aid",subtitle = "Slope = 0.0058, meaning a one percent increase in Chinese aid associated with a 0.0058 percent increase in U.S. aid",y="Logged U.S. Foreign Aid")
+#Masa's code
+model_masa <- glm.cluster(log_usaid ~ dsp*log_caid + as.factor(year) + as.factor(country), cluster="country", data=data)
+summary(model_masa)
+interplot(m=model_masa$glm_res, var1='dsp', var2='log_caid', ci=.95, rfill='dodgerblue1') +
+  geom_hline(yintercept=0, linetype="dashed") +
+  guides(colour=guide_legend(override.aes=list(size=3))) +
+  xlim(c(-10,25)) +
+  ylim(c(-0.05,0.07))
 ```
 ```{r table1, message=FALSE, warning=FALSE, results='asis'}
 c_fe2<-sqrt(diag(c_fe))
