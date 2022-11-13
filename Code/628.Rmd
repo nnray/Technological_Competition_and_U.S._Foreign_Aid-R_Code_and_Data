@@ -31,7 +31,8 @@ library(lmtest)
 library(margins)
 library(marginaleffects)
 library(sjPlot)
-library(urca)
+library(tseries)
+library(aTSA)
 library(vtable)
 library(interplot)
 library(miceadds)
@@ -123,8 +124,6 @@ ITU<-rename(ITU, internet=Value) #total percent of individuals using internet
 ITU<- transform(ITU, internet=as.numeric(internet))
 ITU<- ITU %>%
   select(`country`,`year`,`internet`)
-#replace Libya's missing values... not sure how to justify this, but chose lowest observed value
-ITU["internet"][is.na(ITU["internet"])] <- 14.000000
 USaid<- subset(USaid, `Transaction.Type.Name` %in% c("Disbursements"))
 USaid["Country.Name"][USaid["Country.Name"] == "Congo (Brazzaville)"]<- "Republic of the Congo"
 USaid["Country.Name"][USaid["Country.Name"] == "Congo (Kinshasa)"]<- "Democratic Republic of the Congo"
@@ -228,7 +227,6 @@ data<-Africa %>%
 tm_shape(data) + tm_polygons("caid") + tm_legend(outside = TRUE, hist.width = 2) + tm_layout(frame = FALSE)
 ```
 ```{r analysis}
-sumtable(data)
 data_panel<-pdata.frame(data, index=c("country", "year"))
 pdim(data_panel)
 model_pooled<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2+factor(year),data=data_panel)
@@ -251,13 +249,20 @@ model_fe_interact2<-lm(log_usaid~dsp*log_caid+dsp+log_caid+log_gdp+internet+poli
 c_fe_interact2<-vcovHC(model_fe_interact2,cluster="group")
 summary(model_fe_interact2,vcov=c_fe_interact2)
 ```
+```{r table1, message=FALSE, warning=FALSE, results='asis'}
+c_fe2<-sqrt(diag(c_fe))
+c_fe_interact3<-sqrt(diag(c_fe_interact))
+star= stargazer(model_fe,model_fe_interact,type = "latex",title = "Logged U.S. Aid and Covariates with Two-way Fixed Effects and Clustered SE's on Country",se=list(c_fe2,c_fe_interact3),dep.var.caption = c("Logged U.S. Aid"),dep.var.labels.include = FALSE, column.labels = c("Model 1", "Model 2"), covariate.labels = c("Internet Freedom","Logged Chinese Aid","Logged GDP per Capita","Percent Using Internet","Polity 2","Internet Freedom * Logged Chinese Aid"),header = FALSE,model.numbers = FALSE)
+star=sub('^.+\\label.+$',"", star)
+cat(star,sep='\n')
+```
 ```{r plots}
 #margins(model_fe, variables = "dsp",vcov=c_fe)
 #margins(model_fe, variables = "log_caid",vcov=c_fe)
 dsp_plot<-plot_cap(model_fe, condition="dsp", vcov = c_fe)
-dsp_plot<-dsp_plot+labs(title = "Figure 1: Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", subtitle = "Slope = 0.0206, meaning a one unit increase in internet freedom associated with a 2.08 percent increase in U.S. aid", x="Internet Freedom",y="Logged U.S. Foreign Aid")
+dsp_plot<-dsp_plot+labs(title = "Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", subtitle = "Slope = 0.0206, meaning a one unit increase in internet freedom associated with a 2.08 percent increase in U.S. aid", x="Internet Freedom",y="Logged U.S. Foreign Aid")
 caid_plot<-plot_cap(model_fe, condition="log_caid", vcov = c_fe)
-caid_plot<-caid_plot+labs(title = "Figure 2: Average Marginal Effect of Logged Chinese Aid on Logged U.S. Foreign Aid", x="Logged Chinese Foreign Aid",subtitle = "Slope = 0.0058, meaning a one percent increase in Chinese aid associated with a 0.0058 percent increase in U.S. aid",y="Logged U.S. Foreign Aid")
+caid_plot<-caid_plot+labs(title = "Average Marginal Effect of Logged Chinese Aid on Logged U.S. Foreign Aid", x="Logged Chinese Foreign Aid",subtitle = "Slope = 0.0058, meaning a one percent increase in Chinese aid associated with a 0.0058 percent increase in U.S. aid",y="Logged U.S. Foreign Aid")
 #Masa's code
 model_masa <- glm.cluster(log_usaid ~ dsp*log_caid + as.factor(year) + as.factor(country), cluster="country", data=data)
 summary(model_masa)
@@ -267,15 +272,63 @@ interplot(m=model_masa$glm_res, var1='dsp', var2='log_caid', ci=.95, rfill='dodg
   xlim(c(-10,25)) +
   ylim(c(-0.05,0.07))
 ```
-```{r table1, message=FALSE, warning=FALSE, results='asis'}
-c_fe2<-sqrt(diag(c_fe))
-stargazer(model_fe,type = "latex",title = "Logged U.S. Aid and Covariates with Two-way Fixed Effects and Clustered SE's on Country",se=list(c_fe2))
-```
-```{r robustness, eval=FALSE}
-summary(ur.df(data$dsp))
-summary(ur.df(data$log_usaid))
-summary(ur.df(data$log_caid))
-summary(ur.df(data$log_gdp)) #nonstationary
-#Must do panel unit root tests. Also look at equation balance from Paul/Pickup paper.
-#Other robustness diagnostics
+```{r diagnostics, eval=FALSE}
+#correlations
+data_cor<-as.matrix(data)
+data_cor<-subset(data_cor, select = -c(country,year,country_text_id,country_id,COWcode,caid,usaid,gdp))
+data_cor<-data_cor %>%
+  transform(dsp=as.numeric(dsp)) %>%
+  transform(internet=as.numeric(internet)) %>%
+  transform(polity2=as.numeric(polity2)) %>%
+  transform(log_caid=as.numeric(log_caid)) %>%
+  transform(log_usaid=as.numeric(log_usaid)) %>%
+  transform(log_gdp=as.numeric(log_gdp))
+N<-cor(data_cor)
+row.names(N)<-c("Internet Freedom", "Percent Using Internet", "Polity 2", "Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
+colnames(N)<-c("Internet Freedom", "Percent Using Internet", "Polity 2","Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
+corrplot::corrplot(N,method = 'number',type = 'lower',tl.srt = 45,tl.col = 'black')
+#summary stats
+labs<-c("Internet Freedom", "Percent Using Internet", "Polity 2","Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
+sumtable(data_cor,labels = labs,title = "")
+#stationarity (should also do panel unit root tests, equation balance)
+aTSA::adf.test(data$dsp) #stationary
+aTSA::adf.test(data$log_usaid) #trendstationary?
+tseries::kpss.test(data$log_usaid, null = "Trend") #yep, seems trendstationary
+aTSA::adf.test(data$log_caid) #stationary
+aTSA::adf.test(data$log_gdp) #trendstationary?
+tseries::kpss.test(data$log_gdp, null = "Trend") #yep, seems trendstationary
+aTSA::adf.test(data$internet) #stationary
+aTSA::adf.test(data$log_usaid) #trendstationary?
+tseries::kpss.test(data$log_usaid, null = "Trend") #yep, seems trendstationary
+aTSA::adf.test(data$polity2) #stationary
+#purtest(data_panel$dsp, test = "levinlin", lags = 2, exo = "trend")
+#heteroskedasticity
+#main models are model_fe and model_fe_interact
+plot((data$log_caid|data$country),model_fe$residuals) #everything else looks pretty good except for this...
+bptest(model_fe) #so there is heteroskedasticity, good to use robust se's except maybe not asymptopia...
+plot(data$dsp,model_fe_interact$residuals)
+bptest(model_fe_interact) #heteroskedasticity
+#outliers
+boxplot(data$dsp,
+  ylab = "dsp"
+)
+boxplot(data$log_caid, #this is just a weird variable, not sure what is appropriate
+  ylab = "log_caid"
+)
+grubbs.test(data$log_caid) #high values are influential cases
+boxplot(data$log_usaid, #ooh, maybe some.
+  ylab = "log_usaid"
+)
+grubbs.test(data$log_usaid) #no outliers
+boxplot(data$log_gdp,
+  ylab = "log_gdp"
+)
+boxplot(data$internet,
+  ylab = "internet"
+)
+grubbs.test(data$internet) #no outliers
+boxplot(data$polity2,
+  ylab = "polity2"
+)
+#in conclusion, data is heteroskadastic, most variables are are at least trendstationary (I use two-way fixed effects anyhow), and log_caid has some very influential cases (since most observations are 0)
 ```
