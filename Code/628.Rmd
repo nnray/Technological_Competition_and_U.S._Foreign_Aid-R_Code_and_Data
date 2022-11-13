@@ -36,6 +36,7 @@ library(aTSA)
 library(vtable)
 library(interplot)
 library(miceadds)
+library(outliers)
 ```
 ```{r data, warning=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
@@ -252,9 +253,7 @@ summary(model_fe_interact2,vcov=c_fe_interact2)
 ```{r table1, message=FALSE, warning=FALSE, results='asis'}
 c_fe2<-sqrt(diag(c_fe))
 c_fe_interact3<-sqrt(diag(c_fe_interact))
-star= stargazer(model_fe,model_fe_interact,type = "latex",title = "Logged U.S. Aid and Covariates with Two-way Fixed Effects and Clustered SE's on Country",se=list(c_fe2,c_fe_interact3),dep.var.caption = c("Logged U.S. Aid"),dep.var.labels.include = FALSE, column.labels = c("Model 1", "Model 2"), covariate.labels = c("Internet Freedom","Logged Chinese Aid","Logged GDP per Capita","Percent Using Internet","Polity 2","Internet Freedom * Logged Chinese Aid"),header = FALSE,model.numbers = FALSE)
-star=sub('^.+\\label.+$',"", star)
-cat(star,sep='\n')
+stargazer(model_fe,model_fe_interact,type = "latex",title = "Logged U.S. Aid and Covariates with Two-way Fixed Effects and Clustered SE's on Country",se=list(c_fe2,c_fe_interact3),dep.var.caption = c("Logged U.S. Aid"),dep.var.labels.include = FALSE, column.labels = c("Model 1", "Model 2"), covariate.labels = c("Internet Freedom","Logged Chinese Aid","Logged GDP per Capita","Percent Using Internet","Polity 2","Internet Freedom * Logged Chinese Aid"),header = FALSE,model.numbers = FALSE)
 ```
 ```{r plots}
 #margins(model_fe, variables = "dsp",vcov=c_fe)
@@ -272,7 +271,7 @@ interplot(m=model_masa$glm_res, var1='dsp', var2='log_caid', ci=.95, rfill='dodg
   xlim(c(-10,25)) +
   ylim(c(-0.05,0.07))
 ```
-```{r diagnostics, eval=FALSE}
+```{r diagnostics}
 #correlations
 data_cor<-as.matrix(data)
 data_cor<-subset(data_cor, select = -c(country,year,country_text_id,country_id,COWcode,caid,usaid,gdp))
@@ -304,7 +303,7 @@ aTSA::adf.test(data$polity2) #stationary
 #purtest(data_panel$dsp, test = "levinlin", lags = 2, exo = "trend")
 #heteroskedasticity
 #main models are model_fe and model_fe_interact
-plot((data$log_caid|data$country),model_fe$residuals) #everything else looks pretty good except for this...
+plot((data$log_caid),model_fe$residuals) #everything else looks pretty good except for this...
 bptest(model_fe) #so there is heteroskedasticity, good to use robust se's except maybe not asymptopia...
 plot(data$dsp,model_fe_interact$residuals)
 bptest(model_fe_interact) #heteroskedasticity
