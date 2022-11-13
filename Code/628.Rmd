@@ -289,6 +289,19 @@ corrplot::corrplot(N,method = 'number',type = 'lower',tl.srt = 45,tl.col = 'blac
 #summary stats
 labs<-c("Internet Freedom", "Percent Using Internet", "Polity 2","Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
 sumtable(data_cor,labels = labs,title = "")
+#trying to make descriptive stats for each country...
+#data_sum1<-subset(data,select = -c(year,country_text_id,country_id,COWcode,caid,usaid,gdp))
+#data_sum1<-subset(data_sum1, `country` %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cabo Verde","Cameroon","Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire"))
+#data_sum2<-subset(data,select = -c(year,country_text_id,country_id,COWcode,caid,usaid,gdp))
+#data_sum2<-subset(data_sum2, `country` %in% c("Egypt","Equatorial Guinea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau","Kenya","Lesotho","Liberia","Madagascar","Malawi","Mali"))
+#data_sum3<-subset(data,select = -c(year,country_text_id,country_id,COWcode,caid,usaid,gdp))
+#data_sum3<-subset(data_sum3, `country` %in% c("Mauritania", "Mauritius", "Morocco", "Mozambique", "Namibia","Niger","Nigeria","Rwanda","Senegal","Sierra Leone","South Africa"))
+#data_sum4<-subset(data,select = -c(year,country_text_id,country_id,COWcode,caid,usaid,gdp))
+#data_sum4<-subset(data_sum4, `country` %in% c("Togo","Tunisia","Uganda","Zambia","Zimbabwe"))
+#sumtable(data_sum1,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
+#sumtable(data_sum2,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
+#sumtable(data_sum3,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
+#sumtable(data_sum,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")4
 #stationarity (should also do panel unit root tests, equation balance)
 aTSA::adf.test(data$dsp) #stationary
 aTSA::adf.test(data$log_usaid) #trendstationary?
