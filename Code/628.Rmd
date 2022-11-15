@@ -231,23 +231,18 @@ model_pooled<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2+factor(year),d
 model_re<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data=data_panel,effect = "twoways",model="random")
 c_re<-vcovHC(model_re,cluster="group")
 linearHypothesis(model_re, c("dsp=0"),vcov=c_re) #fe better than pooled
-<<<<<<< HEAD
 #fe model 1
-=======
 #fe model
->>>>>>> 761d2e536aea98bd0764a07f5b5f503837efde35
 model_fe<-plm(log_usaid~dsp+log_caid+log_gdp+internet+polity2,data = data_panel,effect = "twoways",model = "within")
 c_fe<-vcovHC(model_fe,cluster="group")
 linearHypothesis(model_fe, c("dsp=0"), vcov=c_fe) #fe better than pooled
 phtest(model_fe, model_re) #individual error terms are correlated with the regressors (should use fe)
 summary(model_fe,vcov=c_fe)
-<<<<<<< HEAD
 (exp(model_fe$coefficients[1])-1)*100 #dsp coefficient interpretation 
 #fe model 2
 model_fe2<-plm(log_usaid~dsp*log_caid+log_gdp+internet+polity2,data = data_panel,effect = "twoways",model = "within")
 c_fe2<-vcovHC(model_fe2,cluster="group")
 summary(model_fe2,vcov=c_fe2)
-=======
 (exp(model_fe$coefficients[1])-1)*100 #dsp coefficient interpretation
 #fe model, interaction
 model_fe_interact<-plm(log_usaid~dsp*log_caid+dsp+log_caid+log_gdp+internet+polity2,data = data_panel,effect = "twoways",model = "within")
@@ -262,7 +257,6 @@ summary(model_fe_interact2,vcov=c_fe_interact2)
 c_fe2<-sqrt(diag(c_fe))
 c_fe_interact3<-sqrt(diag(c_fe_interact))
 stargazer(model_fe,model_fe_interact,type = "latex",title = "Logged U.S. Aid and Covariates with Two-way Fixed Effects and Clustered SE's on Country",se=list(c_fe2,c_fe_interact3),dep.var.caption = c("Logged U.S. Aid"),dep.var.labels.include = FALSE, column.labels = c("Model 1", "Model 2"), covariate.labels = c("Internet Freedom","Logged Chinese Aid","Logged GDP per Capita","Percent Using Internet","Polity 2","Internet Freedom * Logged Chinese Aid"),header = FALSE,model.numbers = FALSE)
->>>>>>> 761d2e536aea98bd0764a07f5b5f503837efde35
 ```
 ```{r plots}
 #margins(model_fe, variables = "dsp",vcov=c_fe)
@@ -310,7 +304,7 @@ sumtable(data_cor,labels = labs,title = "")
 #sumtable(data_sum1,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
 #sumtable(data_sum2,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
 #sumtable(data_sum3,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
-#sumtable(data_sum,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")4
+#sumtable(data_sum,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
 #stationarity (should also do panel unit root tests, equation balance)
 aTSA::adf.test(data$dsp) #stationary
 aTSA::adf.test(data$log_usaid) #trendstationary?
