@@ -257,6 +257,7 @@ summary(model_fe_interact2,vcov=c_fe_interact2)
 c_fe2<-sqrt(diag(c_fe))
 c_fe_interact3<-sqrt(diag(c_fe_interact))
 stargazer(model_fe,model_fe_interact,type = "latex",title = "Logged U.S. Aid and Covariates with Two-way Fixed Effects and Clustered SE's on Country",se=list(c_fe2,c_fe_interact3),dep.var.caption = c("Logged U.S. Aid"),dep.var.labels.include = FALSE, column.labels = c("Model 1", "Model 2"), covariate.labels = c("Internet Freedom","Logged Chinese Aid","Logged GDP per Capita","Percent Using Internet","Polity 2","Internet Freedom * Logged Chinese Aid"),header = FALSE,model.numbers = FALSE)
+#do analysis of Chinese aid with IF
 ```
 ```{r plots}
 #margins(model_fe, variables = "dsp",vcov=c_fe)
