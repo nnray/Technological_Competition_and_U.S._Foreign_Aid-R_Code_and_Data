@@ -263,9 +263,11 @@ stargazer(model_fe,model_fe_interact,type = "latex",title = "Logged U.S. Aid and
 #margins(model_fe, variables = "dsp",vcov=c_fe)
 #margins(model_fe, variables = "log_caid",vcov=c_fe)
 dsp_plot<-plot_cap(model_fe, condition="dsp", vcov = c_fe)
-dsp_plot<-dsp_plot+labs(title = "Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", subtitle = "Slope = 0.0206, meaning a one unit increase in internet freedom associated with a 2.08 percent increase in U.S. aid", x="Internet Freedom",y="Logged U.S. Foreign Aid")
+dsp_plot<-dsp_plot+labs(title = "Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", subtitle = "Slope = 0.0206, meaning a one unit increase in internet freedom associated with a 2.06 percent increase in U.S. aid", x="Internet Freedom",y="Logged U.S. Foreign Aid")
+dsp_plot<-dsp_plot+geom_rug(data=data, mapping=aes(x=dsp))
 caid_plot<-plot_cap(model_fe, condition="log_caid", vcov = c_fe)
 caid_plot<-caid_plot+labs(title = "Average Marginal Effect of Logged Chinese Aid on Logged U.S. Foreign Aid", x="Logged Chinese Foreign Aid",subtitle = "Slope = 0.0058, meaning a one percent increase in Chinese aid associated with a 0.0058 percent increase in U.S. aid",y="Logged U.S. Foreign Aid")
+caid_plot<-caid_plot+geom_rug(data=data, mapping=aes(x=log_caid))
 #Masa's code
 model_masa <- glm.cluster(log_usaid ~ dsp*log_caid + as.factor(year) + as.factor(country), cluster="country", data=data)
 summary(model_masa)
