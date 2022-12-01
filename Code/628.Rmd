@@ -25,6 +25,8 @@ library(geodist)
 library(shiny)
 library(shinyjs)
 library(vars)
+library(png)
+library(gridExtra)
 library(tidyverse)
 library(plm)
 library(lmtest)
@@ -213,6 +215,9 @@ data<-data %>%
 data["log_caid"][data["log_caid"] == -Inf] <- 0
 data["log_usaid"][is.na(data["log_usaid"])] <- 0
 ```
+```{r csv}
+write.csv(data,"Data.csv",row.names = FALSE)
+```
 ```{r shapefile, eval=FALSE}
 unzip(here("Data","Shapefiles","Africa","afr_g2014_2013_0.zip"))
 Africa<-st_read(here("Code","afr_g2014_2013_0.shp"))
@@ -264,6 +269,7 @@ stargazer(model_fe,model_fe_interact,type = "latex",title = "Logged U.S. Aid and
 #margins(model_fe, variables = "log_caid",vcov=c_fe)
 dsp_plot<-plot_cap(model_fe, condition="dsp", vcov = c_fe)
 dsp_plot<-dsp_plot+labs(title = "Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", subtitle = "Slope = 0.0206, meaning a one unit increase in internet freedom associated with a 2.06 percent increase in U.S. aid", x="Internet Freedom",y="Logged U.S. Foreign Aid")
+#densityplot(~ dsp, data = data)
 dsp_plot<-dsp_plot+geom_rug(data=data, mapping=aes(x=dsp))
 caid_plot<-plot_cap(model_fe, condition="log_caid", vcov = c_fe)
 caid_plot<-caid_plot+labs(title = "Average Marginal Effect of Logged Chinese Aid on Logged U.S. Foreign Aid", x="Logged Chinese Foreign Aid",subtitle = "Slope = 0.0058, meaning a one percent increase in Chinese aid associated with a 0.0058 percent increase in U.S. aid",y="Logged U.S. Foreign Aid")
@@ -296,18 +302,22 @@ corrplot::corrplot(N,method = 'number',type = 'lower',tl.srt = 45,tl.col = 'blac
 labs<-c("Internet Freedom", "Percent Using Internet", "Polity 2","Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
 sumtable(data_cor,labels = labs,title = "")
 #trying to make descriptive stats for each country...
-#data_sum1<-subset(data,select = -c(year,country_text_id,country_id,COWcode,caid,usaid,gdp))
-#data_sum1<-subset(data_sum1, `country` %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cabo Verde","Cameroon","Central African Republic","Chad","Comoros","Republic of the Congo","Cote d'Ivoire"))
-#data_sum2<-subset(data,select = -c(year,country_text_id,country_id,COWcode,caid,usaid,gdp))
-#data_sum2<-subset(data_sum2, `country` %in% c("Egypt","Equatorial Guinea","Ethiopia","Gabon","Gambia","Ghana","Guinea","Guinea-Bissau","Kenya","Lesotho","Liberia","Madagascar","Malawi","Mali"))
-#data_sum3<-subset(data,select = -c(year,country_text_id,country_id,COWcode,caid,usaid,gdp))
-#data_sum3<-subset(data_sum3, `country` %in% c("Mauritania", "Mauritius", "Morocco", "Mozambique", "Namibia","Niger","Nigeria","Rwanda","Senegal","Sierra Leone","South Africa"))
-#data_sum4<-subset(data,select = -c(year,country_text_id,country_id,COWcode,caid,usaid,gdp))
-#data_sum4<-subset(data_sum4, `country` %in% c("Togo","Tunisia","Uganda","Zambia","Zimbabwe"))
-#sumtable(data_sum1,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
-#sumtable(data_sum2,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
-#sumtable(data_sum3,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
-#sumtable(data_sum,group="country",group.long=FALSE,summ = c('mean(x)','sd(x)'),summ.names = c("Mean","SD"),digits = 1,labels = labs,title = "")
+options(digits = 4)
+summary<- data %>%
+  group_by(country) %>%
+  summarise(mean_dsp=mean(dsp),
+            sd_dsp=sd(dsp),
+            mean_polity=mean(polity2),
+            sd_polity=sd(polity2),
+            total_log_caid=sum(log_caid),
+            total_log_usaid=sum(log_usaid),
+            mean_log_gdp=mean(log_gdp),
+            sd_log_gdp=sd(log_gdp),
+            mean_internet=mean(internet),
+            sd_internet=sd(internet))
+png("summary.png", height = 22*nrow(summary), width = 94*ncol(summary))
+grid.table(summary)
+dev.off()
 #stationarity (should also do panel unit root tests, equation balance)
 aTSA::adf.test(data$dsp) #stationary
 aTSA::adf.test(data$log_usaid) #trendstationary?
