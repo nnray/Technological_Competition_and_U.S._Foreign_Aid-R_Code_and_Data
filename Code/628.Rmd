@@ -263,7 +263,7 @@ summary(model_fe_interact2,vcov=c_fe_interact2)
 ```{r table1, message=FALSE, warning=FALSE, results='asis'}
 c_fe2<-sqrt(diag(c_fe))
 c_fe_interact3<-sqrt(diag(c_fe_interact))
-stargazer(model_fe,model_fe_interact,type = "latex",title = "Logged U.S. Aid and Covariates with Two-way Fixed Effects and Clustered SE's on Country",se=list(c_fe2,c_fe_interact3),dep.var.caption = c("Logged U.S. Aid"),dep.var.labels.include = FALSE, column.labels = c("Model 1", "Model 2"), covariate.labels = c("Internet Freedom","Logged Chinese Aid","Logged GDP per Capita","Percent Using Internet","Polity 2","Internet Freedom * Logged Chinese Aid"),header = FALSE,model.numbers = FALSE)
+stargazer(model_fe,model_fe_interact,type = "latex",title = "Logged U.S. Aid and Covariates with Two-way Fixed Effects and Clustered SE's on Country",se=list(c_fe2,c_fe_interact3),dep.var.caption = c("Logged U.S. Aid"),dep.var.labels.include = FALSE, column.labels = c("Model 1", "Model 2"), covariate.labels = c("Internet Governance","Logged Chinese Aid","Logged GDP per Capita","Percent Using Internet","Polity","Internet Governance * Logged Chinese Aid"),header = FALSE,model.numbers = FALSE)
 #do analysis of Chinese aid with IF, include time trend?
 ```
 ```{r plots}
@@ -273,7 +273,7 @@ dsp_plot<-plot_cap(model_fe, condition="dsp", vcov = c_fe)
 #rug plot
 dsp_plot1<-dsp_plot+geom_rug(data=data, mapping=aes(x=dsp))
 #overlaying histogram and marginal effects for dsp
-dsp_plot2<-ggplot(data,aes(dsp))+geom_histogram(aes(dsp), position="identity", linetype=1,fill="gray60", data = data, alpha=0.5, bins = 30) + scale_y_continuous(expand = c(0,0))+labs(title = "Average Marginal Effect of Internet Freedom on Logged U.S. Foreign Aid", subtitle = "Slope = 0.0206, meaning a one unit increase in internet freedom associated with a 2.06 percent increase in U.S. aid", x="Internet Freedom",y="Left: Count, Right: Logged U.S. Foreign Aid")
+dsp_plot2<-ggplot(data,aes(dsp))+geom_histogram(aes(dsp), position="identity", linetype=1,fill="gray60", data = data, alpha=0.5, bins = 30) + scale_y_continuous(expand = c(0,0))+labs(title = "Average Marginal Effect of Internet Governance on Logged U.S. Foreign Aid", subtitle = "Slope = 0.0206, meaning a one unit increase in internet governance associated with a 2.06 percent increase in U.S. aid", x="Internet Governance",y="Left: Count, Right: Logged U.S. Foreign Aid")
 f<-ggplot_gtable(ggplot_build(dsp_plot2))
 v<-ggplot_gtable(ggplot_build(dsp_plot))
 p<-c(subset(f$layout,name=="panel",se=t:r))
@@ -323,11 +323,11 @@ data_cor<-data_cor %>%
   transform(log_usaid=as.numeric(log_usaid)) %>%
   transform(log_gdp=as.numeric(log_gdp))
 N<-cor(data_cor)
-row.names(N)<-c("Internet Freedom", "Percent Using Internet", "Polity 2", "Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
-colnames(N)<-c("Internet Freedom", "Percent Using Internet", "Polity 2","Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
+row.names(N)<-c("Internet Governance", "Percent Using Internet", "Polity", "Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
+colnames(N)<-c("Internet Governance", "Percent Using Internet", "Polity","Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
 corrplot::corrplot(N,method = 'number',type = 'lower',tl.srt = 45,tl.col = 'black')
 #summary stats
-labs<-c("Internet Freedom", "Percent Using Internet", "Polity 2","Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
+labs<-c("Internet Governance", "Percent Using Internet", "Polity","Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
 sumtable(data_cor,labels = labs,title = "")
 #trying to make descriptive stats for each country...
 options(digits = 4)
