@@ -1,6 +1,0 @@
----
-title: "ExplainingInternetFreedomLevels"
-author: "Nicholas Ray"
-date: "2022-09-21"
-output: pdf_document
----
