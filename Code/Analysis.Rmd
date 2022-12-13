@@ -4,6 +4,7 @@ author: "Nicholas Ray"
 date: "9/20/2022"
 output: pdf_document
 ---
+<!-- Loading relevant libraries. -->
 ```{r libraries, include=FALSE,warning=FALSE,message=FALSE}
 library(here)
 library(car)
@@ -42,6 +43,8 @@ library(interplot)
 library(miceadds)
 library(outliers)
 ```
+
+<!-- Loading relevant data. For more information on where these data come from, see "Data_Sources" under the "Data" folder. -->
 ```{r data, warning=FALSE}
 USaid<-read.csv(here("Data", "Aid", "us_foreign_aid_country.csv"))
 unzip(here("Data", "Aid", "aiddataChina", "AidDatasGlobalChineseDevelopmentFinanceDataset_v2.0.zip"))
@@ -54,6 +57,8 @@ ITU<-read_excel(here("Code", "ddd_dataset.xlsx"))
 unzip(here("Data", "GDP", "UNdata_Export_20221013_234232609.zip"))
 GDP<-read.csv(here("Code", "UNdata_Export_20221013_234232609.csv"))
 ```
+
+<!-- All the cleaning I did to the above data. I apologize as this may not be the most readable or efficient code possible. Feel free to email me (nnray@tamu.edu) with any questions. -->
 ```{r cleaning, include=FALSE,warning=FALSE,message=FALSE}
 Caid["Recipient"][Caid["Recipient"] == "Congo"] <- "Republic of the Congo"
 Caid<- subset(Caid, Recipient %in% c("Algeria","Angola","Benin","Botswana","Burundi","Cabo Verde","Cameroon",
@@ -194,6 +199,8 @@ data<- full_join(Caid, DSP, by = c("country","year")) %>%
 #eliminated Sudan, South Sudan, Eritrea, Somalia due to instability/missingness/absence of data from DSP/Polity
 #also probably elimate Libya due to internet missing data and U.S. invasion
 ```
+
+<!-- Rebasing the financial data used, ensuring that foreign aid and GDP per capita figures are measured in the same year-dollar units (2015 here). -->
 ```{r rebasing}
 deflator<-read.csv(here("Data","GDP","USAGDPDEFAISMEI.csv"))
 #GDP deflator found here https://fred.stlouisfed.org/series/usagdpdefaismei
@@ -217,9 +224,13 @@ data<-data %>%
 data["log_caid"][data["log_caid"] == -Inf] <- 0
 data["log_usaid"][is.na(data["log_usaid"])] <- 0
 ```
+
+<!-- Writing the completed, cleaned data frame to an Excel file to enable future use by myself or others. -->
 ```{r csv}
 write.csv(data,"Data.csv",row.names = FALSE)
 ```
+
+<!-- Loading and tentatively cleaning a shapefile for Africa for potential spatial analysis in the future. -->
 ```{r shapefile, eval=FALSE}
 unzip(here("Data","Shapefiles","Africa","afr_g2014_2013_0.zip"))
 Africa<-st_read(here("Code","afr_g2014_2013_0.shp"))
@@ -231,6 +242,8 @@ Africa[12,1]<- "Cote d'Ivoire"
 Africa[11,1]<- "Republic of the Congo"
 Africa[44,1]<- "Tanzania"
 ```
+
+<!-- Estimating numerous models using the data above. Feel free to email me (nnray@tamu.edu) with any questions or concerns. -->
 ```{r analysis}
 data_panel<-pdata.frame(data, index=c("country", "year"))
 pdim(data_panel)
@@ -260,12 +273,16 @@ model_fe_interact2<-lm(log_usaid~dsp*log_caid+dsp+log_caid+log_gdp+internet+poli
 c_fe_interact2<-vcovHC(model_fe_interact2,cluster="group")
 summary(model_fe_interact2,vcov=c_fe_interact2)
 ```
+
+<!-- Creating my main regression output. -->
 ```{r table1, message=FALSE, warning=FALSE, results='asis'}
 c_fe2<-sqrt(diag(c_fe))
 c_fe_interact3<-sqrt(diag(c_fe_interact))
 stargazer(model_fe,model_fe_interact,type = "latex",title = "Logged U.S. Aid and Covariates with Two-way Fixed Effects and Clustered SE's on Country",se=list(c_fe2,c_fe_interact3),dep.var.caption = c("Logged U.S. Aid"),dep.var.labels.include = FALSE, column.labels = c("Model 1", "Model 2"), covariate.labels = c("Internet Governance","Logged Chinese Aid","Logged GDP per Capita","Percent Using Internet","Polity","Internet Governance * Logged Chinese Aid"),header = FALSE,model.numbers = FALSE)
 #do analysis of Chinese aid with IF, include time trend?
 ```
+
+<!-- Creating plots of the main relationships studied. -->
 ```{r plots}
 #margins(model_fe, variables = "dsp",vcov=c_fe)
 #margins(model_fe, variables = "log_caid",vcov=c_fe)
@@ -311,6 +328,8 @@ interplot(m=model_masa$glm_res, var1='dsp', var2='log_caid', ci=.95, rfill='dodg
   xlim(c(-10,25)) +
   ylim(c(-0.05,0.07))
 ```
+
+<!-- Running some diagnostics on the data analyzed. -->
 ```{r diagnostics}
 #correlations
 data_cor<-as.matrix(data)
@@ -329,7 +348,7 @@ corrplot::corrplot(N,method = 'number',type = 'lower',tl.srt = 45,tl.col = 'blac
 #summary stats
 labs<-c("Internet Governance", "Percent Using Internet", "Polity","Logged U.S. Aid","Logged Chinese Aid","Logged GDP per Capita")
 sumtable(data_cor,labels = labs,title = "")
-#trying to make descriptive stats for each country...
+#descriptive stats
 options(digits = 4)
 summary<- data %>%
   group_by(country) %>%
