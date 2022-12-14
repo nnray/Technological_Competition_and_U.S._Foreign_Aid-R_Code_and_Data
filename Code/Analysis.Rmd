@@ -211,6 +211,7 @@ deflator<- as.matrix(deflator)
 deflator<- deflator * 0.01
 deflator<- rep(deflator,times=44)
 deflator<- as.matrix(deflator)
+deflator<-1/deflator
 data$caid<-diag(data$caid_usdcurrent) %*% deflator
 data$usaid<-diag(data$usaid_usdcurrent) %*% deflator
 data<- data %>%
